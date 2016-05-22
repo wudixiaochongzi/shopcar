@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="shop">
+<head>
+    <meta charset="UTF-8">
+    <title>购物车</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            border-top: 1px solid #3c3c3c;
+            border-left: 1px solid #3c3c3c;
+        }
+        td,th{
+            border-bottom: 1px solid #3c3c3c;
+            border-right: 1px solid #3c3c3c;
+            padding: 8px 10px;
+            text-align: center;
+            height: 22px;
+        }
+        div[ng-controller="good"]{
+            padding: 60px 100px;
+        }
+        input.userinput{
+            width: 20px;
+            text-align: center;
+        }
+        input.search{
+            margin-bottom: 30px;
+            height: 30px;
+        }
+    </style>
+    <script src="angular.min.js"></script>
+    <link rel="stylesheet" href="css/public.css">
+</head>
+<body>
+    <div ng-controller="good">
+        <input type="text" placeholder="搜索关键字" class="search" ng-model="search" ng-change="searchchange()">
+        <table>
+            <tr>
+                <th>编号</th>
+                <th>名称</th>
+                <th ng-click="order('price')">单价</th>
+                <th>单位</th>
+                <th>添加到购物车</th>
+            </tr>
+            <tr ng-repeat="g in goods | orderBy:or | filter:search">
+                <td>{{$index+1}}</td>
+                <td>{{g.name}}</td>
+                <td>{{g.price | currency:'￥':2}}</td>
+                <td>{{g.num}}斤</td>
+                <td><button ng-click="addcar(g)">添加</button></td>
+            </tr>
+        </table>
+        <hr>
+        <table>
+            <tr>
+                <th>编号</th>
+                <th>名称</th>
+                <th ng-click="order1('price')">价格</th>
+                <th>数量</th>
+                <th>删除商品</th>
+            </tr>
+            <tr ng-repeat="c in buy | orderBy:or1">
+                <td>{{$index+1}}</td>
+                <td>{{c.name}}</td>
+                <td>{{c.price | currency:'￥':2}}</td>
+                <td>
+                    <button ng-click="jiannum(c)">-</button>
+                    <input type="text" ng-model="c.num" ng-change="userinput(c)" class="userinput" placeholder="">
+                    <button ng-click="addnum(c)">+</button>&nbsp;斤
+                </td>
+                <td><button ng-click="del(c)">删除</button></td>
+            </tr>
+            <tr>
+                <td colspan="5">总价：{{total() | currency:'￥':2}}</td>
+            </tr>
+        </table>
+    </div>
+</body>
+<script>
+    var fruit=[
+        {id:0,name:"新疆冰糖心红富士苹果",price:10,num:1},
+        {id:1,name:"山西运城红富士苹果",price:3.6,num:1},
+        {id:2,name:"山东烟台红富士苹果",price:4.5,num:1},
+        {id:3,name:"陕西红富士苹果",price:3.2,num:1},
+        {id:4,name:"山西运城夏季嘎啦苹果",price:4.0,num:1},
+        {id:5,name:"香蕉",price:2.6,num:1},
+        {id:6,name:"香蕉芝麻蕉",price:3,num:1},
+        {id:7,name:"西瓜",price:1.8,num:1},
+        {id:8,name:"无籽西瓜",price:2.8,num:1}
+    ];
+    var app=angular.module('shop',[]);
+    app.controller('good',function($scope){
+        $scope.goods=fruit;//物品列表数据
+        $scope.buy=[];//购物车列表数据
+        $scope.search=null;
+
+    //添加到购物车方法
+        $scope.flag=true;//开关
+        $scope.addcar=function(g){
+            var o={};  //定义一个对象，用来存放点击添加到购物车时从货物列表提取的数据
+            if ($scope.buy.length>0){  //购物车数据列表里面有数据时候才能遍历
+                angular.forEach($scope.buy,function(obj,j){  //遍历购物车列表数据，如果列表中原来就有用户需要添加到购物车的那个物品，那么直接让数量++就可以，不需要创建数据
+                    if ($scope.buy[j].id== g.id){
+                        $scope.buy[j].num++;
+                        $scope.buy[j].price+=$scope.buy[j].oneprice;
+                        $scope.flag=false;
+                    }
+                });
+                $scope.flag=!$scope.flag;
+                if ($scope.flag){
+                    return;
+                }
+            }
+        /*
+            开关需要注意：
+            1、当点击某个物品添加到购物车时，如果原来购物车数据列表里面有这个物品，让flag=false;这样forEach遍历完成后通过$scope.flag=!$scope.flag让flag变为原来的true，然后就会执行后面的return.
+            2、当点击某个物品添加到购物车时，如果原来购物车数据列表里面没有这个物品，不会执行forEach里面的if语句，就需要执行本注释下面的创建数据语句来创建，不需要return这个if，所以$scope.flag=!$scope会把开关变为false，不会return。
+        */
+            o.id= g.id;
+            o.name=g.name;  //下面这三句都是创建一条数据o，最后把这条数据放在数据列表buy中
+            o.price=g.price;
+            o.num=g.num;
+            o.oneprice=g.price;
+            $scope.buy.push(o);
+        };
+
+    //删除购物车数据的方法
+        $scope.del=function(c){
+//            $scope.buy.splice(i,1);
+        };
+
+    //增加数量
+        $scope.addnum=function(c){
+            c.num++;
+            c.price+= c.oneprice;
+        };
+    //减少数量
+        $scope.jiannum=function(c){
+            c.num--;
+            if (c.num<1){
+                c.num=1;
+                return;
+            }
+            c.price-=c.oneprice;
+        };
+    //总价
+        $scope.total=function() {
+            var t=0;
+            angular.forEach($scope.buy, function (obj,i) {
+                t+=$scope.buy[i].price;
+            });
+            return t;
+        };
+    //用户输入
+        $scope.userinput=function(c){
+            if (c.num<1) {
+                c.num=1;
+            }
+            c.price=c.oneprice*c.num;
+        };
+    //排序
+        $scope.order=function(op){
+            $scope.or= $scope.or=='+'+op?'-'+op:'+'+op;
+        };
+        $scope.order1=function(op){
+            $scope.or1= $scope.or1=='+'+op?'-'+op:'+'+op;
+        };
+    //搜索
+        $scope.searchchange=function(){
+            if ($scope.search==""){
+                $scope.search=null;
+            }
+        }
+
+    });
+
+</script>
+</html>
